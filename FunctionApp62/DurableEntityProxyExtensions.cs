@@ -4,9 +4,9 @@ namespace FunctionApp62
 {
     public static class DurableEntityProxyExtensions
     {
-        public static TProxy CreateEntityProxy<TProxy>(this IDurableOrchestrationContext context, string entityKey)
+        public static TEntity CreateEntityProxy<TEntity>(this IDurableOrchestrationContext context, string entityKey)
         {
-            return EntityProxyFactory.Create<TProxy>(context, entityKey);
+            return EntityProxyFactory.Create<TEntity>(context, entityKey);
         }
     }
 }

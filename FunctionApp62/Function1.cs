@@ -34,6 +34,8 @@ namespace FunctionApp62
             var value2 = await proxy.Sub(50);
 
             log.LogWarning($"Sub : {value2}");
+
+            await proxy.Reset();
         }
     }
 }

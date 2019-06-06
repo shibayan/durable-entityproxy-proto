@@ -15,7 +15,7 @@ namespace FunctionApp62
         private readonly IDurableOrchestrationContext _context;
         private readonly EntityId _entityId;
 
-        protected Task<TResult> CallEntityAsync<TResult>(string operationName, object operationInput = null)
+        protected Task<TResult> CallEntityAsync<TResult>(string operationName, object operationInput)
         {
             return _context.CallEntityAsync<TResult>(_entityId, operationName, operationInput);
         }

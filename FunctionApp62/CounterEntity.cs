@@ -23,15 +23,20 @@ namespace FunctionApp62
             // await context.DispatchAsync<CounterEntity>();
 
             var currentValue = context.GetState<int>();
-            int value = context.GetInput<int>();
 
             switch (context.OperationName)
             {
                 case "Add":
-                    currentValue += value;
+                    {
+                        int value = context.GetInput<int>();
+                        currentValue += value;
+                    }
                     break;
                 case "Sub":
-                    currentValue -= value;
+                    {
+                        int value = context.GetInput<int>();
+                        currentValue -= value;
+                    }
                     break;
                 case "Reset":
                     currentValue = 0;

@@ -9,11 +9,11 @@ namespace FunctionApp62
 {
     public static class EntityProxyFactory
     {
-        public static TProxy Create<TProxy>(IDurableOrchestrationContext context, string entityKey)
+        public static TEntity Create<TEntity>(IDurableOrchestrationContext context, string entityKey)
         {
-            var type = _typeMappings.GetOrAdd(typeof(TProxy), CreateProxyType);
+            var type = _typeMappings.GetOrAdd(typeof(TEntity), CreateProxyType);
 
-            return (TProxy)Activator.CreateInstance(type, context, entityKey);
+            return (TEntity)Activator.CreateInstance(type, context, entityKey);
         }
 
         private static readonly ConcurrentDictionary<Type, Type> _typeMappings = new ConcurrentDictionary<Type, Type>();
