@@ -25,7 +25,7 @@ namespace FunctionApp62
         [FunctionName("OrchestratorStart")]
         public static async Task OrchestratorStart([OrchestrationTrigger] IDurableOrchestrationContext context, ILogger log)
         {
-            var proxy = context.CreateEntityProxy<ICounterEntity>("game1");
+            var proxy = context.CreateEntityProxy<ICounterEntity>(new EntityId(nameof(CounterEntity), "game1"));
 
             var value1 = await proxy.Add(100);
 
@@ -35,7 +35,7 @@ namespace FunctionApp62
 
             log.LogWarning($"Sub : {value2}");
 
-            await proxy.Reset();
+            //await proxy.Reset();
         }
     }
 }

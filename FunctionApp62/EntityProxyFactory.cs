@@ -9,11 +9,11 @@ namespace FunctionApp62
 {
     public static class EntityProxyFactory
     {
-        public static TEntity Create<TEntity>(IDurableOrchestrationContext context, string entityKey)
+        public static TEntityInterface Create<TEntityInterface>(IEntityProxyContext context, EntityId entityId)
         {
-            var type = _typeMappings.GetOrAdd(typeof(TEntity), CreateProxyType);
+            var type = _typeMappings.GetOrAdd(typeof(TEntityInterface), CreateProxyType);
 
-            return (TEntity)Activator.CreateInstance(type, context, entityKey);
+            return (TEntityInterface)Activator.CreateInstance(type, context, entityId);
         }
 
         private static readonly ConcurrentDictionary<Type, Type> _typeMappings = new ConcurrentDictionary<Type, Type>();
@@ -26,23 +26,21 @@ namespace FunctionApp62
             var moduleBuilder = assemblyBuilder.DefineDynamicModule("DynamicModule");
             var typeName = $"{interfaceType.Name}_{Guid.NewGuid():N}";
 
-            var baseType = typeof(EntityProxy<>).MakeGenericType(interfaceType);
-
             var typeBuilder = moduleBuilder.DefineType(typeName,
                 TypeAttributes.Public | TypeAttributes.BeforeFieldInit | TypeAttributes.AnsiClass,
-                baseType);
+                typeof(EntityProxy));
 
             typeBuilder.AddInterfaceImplementation(interfaceType);
 
-            BuildConstructor(typeBuilder, baseType);
-            BuildMethods(typeBuilder, interfaceType, baseType);
+            BuildConstructor(typeBuilder);
+            BuildMethods(typeBuilder, interfaceType);
 
             return typeBuilder.CreateType();
         }
 
-        private static void BuildConstructor(TypeBuilder typeBuilder, Type baseType)
+        private static void BuildConstructor(TypeBuilder typeBuilder)
         {
-            var ctorArgTypes = new[] { typeof(IDurableOrchestrationContext), typeof(string) };
+            var ctorArgTypes = new[] { typeof(IEntityProxyContext), typeof(EntityId) };
 
             // Create ctor
             var ctor = typeBuilder.DefineConstructor(
@@ -55,15 +53,15 @@ namespace FunctionApp62
             ilGenerator.Emit(OpCodes.Ldarg_0);
             ilGenerator.Emit(OpCodes.Ldarg_1);
             ilGenerator.Emit(OpCodes.Ldarg_2);
-            ilGenerator.Emit(OpCodes.Call, baseType.GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, ctorArgTypes, null));
+            ilGenerator.Emit(OpCodes.Call, typeof(EntityProxy).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, null, ctorArgTypes, null));
             ilGenerator.Emit(OpCodes.Ret);
         }
 
-        private static void BuildMethods(TypeBuilder typeBuilder, Type interfaceType, Type baseType)
+        private static void BuildMethods(TypeBuilder typeBuilder, Type interfaceType)
         {
             var methods = interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public);
 
-            var callEntityAsyncMethod = baseType.GetMethod("CallEntityAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+            var invokeAsyncMethod = typeof(EntityProxy).GetMethod("InvokeAsync", BindingFlags.NonPublic | BindingFlags.Instance);
 
             foreach (var methodInfo in methods)
             {
@@ -97,7 +95,7 @@ namespace FunctionApp62
                 }
 
                 ilGenerator.DeclareLocal(methodInfo.ReturnType);
-                ilGenerator.Emit(OpCodes.Call, callEntityAsyncMethod.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()[0]));
+                ilGenerator.Emit(OpCodes.Call, invokeAsyncMethod.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()[0]));
                 ilGenerator.Emit(OpCodes.Stloc_0);
                 ilGenerator.Emit(OpCodes.Ldloc_0);
                 ilGenerator.Emit(OpCodes.Ret);

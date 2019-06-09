@@ -17,8 +17,7 @@ namespace FunctionApp62
     public class CounterEntity : ICounterEntity
     {
         [FunctionName(nameof(CounterEntity))]
-        public async Task Counter([EntityTrigger(EntityName = nameof(ICounterEntity))]
-                                  IDurableEntityContext context)
+        public async Task Counter([EntityTrigger] IDurableEntityContext context)
         {
             // await context.DispatchAsync<CounterEntity>();
 
