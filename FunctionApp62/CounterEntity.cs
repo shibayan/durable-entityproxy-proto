@@ -8,9 +8,10 @@ namespace FunctionApp62
 {
     public interface ICounterEntity
     {
-        Task<int> Add(int value);
-        Task<int> Sub(int value);
-        Task<int> Reset();
+        void Increment();
+        void Add(int value);
+        Task<int> Get();
+        void Set(int newValue);
     }
 
     [JsonObject(MemberSerialization = MemberSerialization.OptIn)]
@@ -21,47 +22,48 @@ namespace FunctionApp62
         {
             // await context.DispatchAsync<CounterEntity>();
 
-            var currentValue = context.GetState<int>();
+            CurrentValue = context.GetState<int>();
 
             switch (context.OperationName)
             {
-                case "Add":
-                    {
-                        int value = context.GetInput<int>();
-                        currentValue += value;
-                    }
+                case nameof(Increment):
+                    Increment();
                     break;
-                case "Sub":
-                    {
-                        int value = context.GetInput<int>();
-                        currentValue -= value;
-                    }
+                case nameof(Add):
+                    Add(context.GetInput<int>());
                     break;
-                case "Reset":
-                    currentValue = 0;
+                case nameof(Get):
+                    context.Return(await Get());
+                    break;
+                case nameof(Set):
+                    Set(context.GetInput<int>());
                     break;
             }
 
-            context.SetState(currentValue);
-            context.Return(currentValue);
+            context.SetState(CurrentValue);
         }
 
         [JsonProperty]
         public int CurrentValue { get; set; }
 
-        public Task<int> Add(int value)
+        public void Increment()
         {
-            return Task.FromResult(CurrentValue += value);
+            CurrentValue += 1;
         }
 
-        public Task<int> Sub(int value)
+        public void Add(int value)
         {
-            return Task.FromResult(CurrentValue -= value);
+            CurrentValue += value;
         }
 
-        public Task<int> Reset()
+        public async Task<int> Get()
         {
-            return Task.FromResult(CurrentValue = 0);
+            return CurrentValue;
+        }
+
+        public void Set(int newValue)
+        {
+            CurrentValue = newValue;
         }
     }
 }

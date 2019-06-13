@@ -4,19 +4,19 @@ namespace FunctionApp62
 {
     public static class DurableEntityProxyExtensions
     {
-        public static TEntityInterface CreateEntityProxy<TEntityInterface>(this IDurableOrchestrationClient client, EntityId entityId)
+        public static EntityProxy<TEntityInterface> CreateEntityProxy<TEntityInterface>(this IDurableOrchestrationClient client, EntityId entityId)
         {
-            return EntityProxyFactory.Create<TEntityInterface>(new OrchestrationClientProxy(client), entityId);
+            return new EntityProxy<TEntityInterface>(new OrchestrationClientProxy(client), entityId);
         }
 
-        public static TEntityInterface CreateEntityProxy<TEntityInterface>(this IDurableOrchestrationContext context, EntityId entityId)
+        public static EntityProxy<TEntityInterface> CreateEntityProxy<TEntityInterface>(this IDurableOrchestrationContext context, EntityId entityId)
         {
-            return EntityProxyFactory.Create<TEntityInterface>(new OrchestrationContextProxy(context), entityId);
+            return new EntityProxy<TEntityInterface>(new OrchestrationContextProxy(context), entityId);
         }
 
-        public static TEntityInterface CreateEntityProxy<TEntityInterface>(this IDurableEntityContext context, EntityId entityId)
+        public static EntityProxy<TEntityInterface> CreateEntityProxy<TEntityInterface>(this IDurableEntityContext context, EntityId entityId)
         {
-            return EntityProxyFactory.Create<TEntityInterface>(new EntityContextProxy(context), entityId);
+            return new EntityProxy<TEntityInterface>(new EntityContextProxy(context), entityId);
         }
     }
 }

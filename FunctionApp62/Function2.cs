@@ -1,12 +1,9 @@
-using System;
-using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
 
 namespace FunctionApp62
 {
@@ -21,9 +18,20 @@ namespace FunctionApp62
         {
             var proxy = client.CreateEntityProxy<ICounterEntity>(new EntityId(nameof(CounterEntity), "game1"));
 
-            await proxy.Add(200);
+            // use explicit flush
+            proxy.Entity.Set(50);
 
-            await proxy.Sub(50);
+            proxy.Entity.Add(200);
+
+            await proxy.FlushAsync();
+
+            // or
+            await proxy.BatchAsync(x =>
+            {
+                x.Set(50);
+
+                x.Set(100);
+            });
 
             return new OkResult();
         }

@@ -27,13 +27,15 @@ namespace FunctionApp62
         {
             var proxy = context.CreateEntityProxy<ICounterEntity>(new EntityId(nameof(CounterEntity), "game1"));
 
-            var value1 = await proxy.Add(100);
+            proxy.Entity.Set(50);
 
-            log.LogWarning($"Add : {value1}");
+            proxy.Entity.Increment();
 
-            var value2 = await proxy.Sub(50);
+            proxy.Entity.Add(100);
 
-            log.LogWarning($"Sub : {value2}");
+            var value = await proxy.Entity.Get();
+
+            log.LogWarning($"Value : {value}");
 
             //await proxy.Reset();
         }

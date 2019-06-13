@@ -1,15 +1,17 @@
 using System;
 using System.Collections.Concurrent;
+using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Threading.Tasks;
 
 using Microsoft.Azure.WebJobs;
 
 namespace FunctionApp62
 {
-    public static class EntityProxyFactory
+    internal static class EntityProxyFactory
     {
-        public static TEntityInterface Create<TEntityInterface>(IEntityProxyContext context, EntityId entityId)
+        internal static TEntityInterface Create<TEntityInterface>(IEntityProxyContext context, EntityId entityId)
         {
             var type = _typeMappings.GetOrAdd(typeof(TEntityInterface), CreateProxyType);
 
@@ -61,11 +63,25 @@ namespace FunctionApp62
         {
             var methods = interfaceType.GetMethods(BindingFlags.Instance | BindingFlags.Public);
 
-            var invokeAsyncMethod = typeof(EntityProxy).GetMethod("InvokeAsync", BindingFlags.NonPublic | BindingFlags.Instance);
+            var entityProxyMethods = typeof(EntityProxy).GetMethods(BindingFlags.NonPublic | BindingFlags.Instance);
+
+            var callAsyncMethod = entityProxyMethods.First(x => x.Name == nameof(EntityProxy.CallAsync) && !x.IsGenericMethod);
+            var callAsyncWithGenericMethod = entityProxyMethods.First(x => x.Name == nameof(EntityProxy.CallAsync) && x.IsGenericMethod);
+            var signalMethod = entityProxyMethods.First(x => x.Name == nameof(EntityProxy.Signal));
 
             foreach (var methodInfo in methods)
             {
                 var parameters = methodInfo.GetParameters();
+
+                if (parameters.Length > 1)
+                {
+                    throw new InvalidOperationException("Only a single argument can be used for operation input.");
+                }
+
+                if (methodInfo.ReturnType != typeof(void) && !(methodInfo.ReturnType == typeof(Task) || methodInfo.ReturnType.BaseType == typeof(Task)))
+                {
+                    throw new InvalidOperationException("Only a return type in void, Task, Task<T>.");
+                }
 
                 var method = typeBuilder.DefineMethod(
                     methodInfo.Name,
@@ -94,10 +110,20 @@ namespace FunctionApp62
                     }
                 }
 
-                ilGenerator.DeclareLocal(methodInfo.ReturnType);
-                ilGenerator.Emit(OpCodes.Call, invokeAsyncMethod.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()[0]));
-                ilGenerator.Emit(OpCodes.Stloc_0);
-                ilGenerator.Emit(OpCodes.Ldloc_0);
+                if (methodInfo.ReturnType == typeof(void))
+                {
+                    ilGenerator.Emit(OpCodes.Call, signalMethod);
+                }
+                else
+                {
+                    ilGenerator.DeclareLocal(methodInfo.ReturnType);
+
+                    ilGenerator.Emit(OpCodes.Call, methodInfo.ReturnType.IsGenericType ? callAsyncWithGenericMethod.MakeGenericMethod(methodInfo.ReturnType.GetGenericArguments()[0]) : callAsyncMethod);
+
+                    ilGenerator.Emit(OpCodes.Stloc_0);
+                    ilGenerator.Emit(OpCodes.Ldloc_0);
+                }
+
                 ilGenerator.Emit(OpCodes.Ret);
             }
         }
